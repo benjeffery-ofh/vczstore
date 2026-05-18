@@ -737,7 +737,7 @@ def create(
                 create_empty_group_array(
                     out_root,
                     var,
-                    shape=arr.shape,
+                    shape=shape,
                     dtype=arr.dtype,
                     chunks=arr.chunks,
                     compressor=get_compressor_config(arr),

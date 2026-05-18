@@ -6,6 +6,7 @@ import zarr
 from numpy.testing import assert_array_equal
 from vcztools.utils import open_zarr
 
+from vczstore.append import append
 from vczstore.create import _can_merge_variants, _merge_alts, _merge_ids, create
 
 from .utils import make_vcz
@@ -59,6 +60,40 @@ def test_create__single():
     assert_array_equal(root["variant_position"][:], [100])
     assert root["variant_allele"][0, 0] == "A"
     assert root["variant_allele"][0, 1] == "T"
+
+
+def test_create__single_has_zero_samples():
+    vcz1 = make_vcz(
+        [0],
+        [100],
+        [["A", "T"]],
+        sample_id=["S1", "S2"],
+        call_genotype=[[[0, 0], [1, 1]]],
+    )
+    vcz_out = zarr.storage.MemoryStore()
+    create(vcz_out, vcz1)
+    root = zarr.open(vcz_out)
+
+    assert root["sample_id"].shape == (0,)
+    assert root["call_genotype"].shape == (1, 0, 2)
+
+
+def test_create_then_append_has_no_empty_sample_gap():
+    vcz1 = make_vcz(
+        [0],
+        [100],
+        [["A", "T"]],
+        sample_id=["S1", "S2"],
+        call_genotype=[[[0, 0], [1, 1]]],
+    )
+    vcz_out = zarr.storage.MemoryStore()
+    create(vcz_out, vcz1)
+    append(vcz_out, vcz1)
+    root = zarr.open(vcz_out)
+
+    assert_array_equal(root["sample_id"][:], ["S1", "S2"])
+    assert root["call_genotype"].shape == (1, 2, 2)
+    assert_array_equal(root["call_genotype"][:], [[[0, 0], [1, 1]]])
 
 
 def test_create__override_samples_chunk_size():
