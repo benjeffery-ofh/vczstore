@@ -108,7 +108,7 @@ def append(vcz1, vcz2, verbose, backend_storage, io_concurrency, require_direct_
 @progress
 @backend_storage
 def create(vcz_out, vczs, samples_chunk_size, verbose, progress, backend_storage):
-    """Create a new, empty store VCZ_OUT using merged variants from VCZS"""
+    """Create a new store VCZ_OUT from VCZS"""
     setup_logging(verbose)
     call_or_error(
         create_function,

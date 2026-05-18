@@ -524,13 +524,13 @@ def _compute_merged_variants(
 def create(
     vcz_out, *vczs, samples_chunk_size=None, show_progress=False, backend_storage=None
 ) -> None:
-    """Create a new, empty store vcz_out using merged variants from vczs
+    """Create a new store vcz_out from variants in vczs
     using -m none semantics with stable variant ordering.
 
     Currently vczs must contain exactly one or two stores. This requirement may be
     lifted in the future.
 
-    In the case of one store, the new store is the same except it contains no samples.
+    In the case of one store, the new store is a copy of the input store.
 
     In the case of two stores, both must have identical contig_id arrays. Output
     contains all variants from both stores; variants at the same position whose alt
@@ -557,8 +557,6 @@ def create(
         root1 = zarr.open(vcz1, mode="r")
 
         if len(vczs) == 1:
-            n_variants = root1["variant_contig"].shape[0]
-
             out_root = open_zarr(
                 vcz_out,
                 mode="w",
@@ -568,13 +566,10 @@ def create(
             out_root.attrs.update(root1.attrs)
 
             # copy direct from vcz1
-            vcz1_copy_vars = [
-                var
-                for var in root1.keys()
-                if not var.startswith("call_") and not var == "sample_id"
-            ]
+            vcz1_copy_vars = list(root1.keys())
             logger.debug(f"Copying arrays for {', '.join(vcz1_copy_vars)}")
             copy_store(vcz1, vcz_out, array_keys=vcz1_copy_vars)
+            return
 
         else:  # len(vczs) == 2
             vcz2 = vczs[1]

@@ -10,7 +10,7 @@ VCF Zarr files (also known as VCZ files) can be created using [bio2zarr](https:/
 
 Vczstore solves the update use case by providing the following operations
 
-1. **Create** an empty VCZ store with a known set of variants
+1. **Create** a VCZ store with a known set of variants
 2. **Append** new samples to a VCZ store
 3. **Remove** samples from a VCZ store
 
@@ -36,7 +36,10 @@ A VCZ store is just a VCZ file - typically in cloud object store - so it's possi
 
 However, when the VCFs being appended contain different variants the store must be created with the full set of variants. This is achieved by calling `vczstore create` with the VCZ files that collectively define the set of variants (e.g. one for each genotype array). (Currently `vczstore create` can only be called with one or two input VCZ arguments - but you can call it repeatedly to built up the store from multiple files.)
 
-After creation the store contains no samples.
+When `vczstore create` is called with one input VCZ, the output is a full copy of
+that input, including sample and call arrays. When called with two input VCZs,
+the output contains the merged variant set and empty sample/call arrays ready for
+subsequent appends.
 
 ![Creating a store](docs/images/vczstore-create.drawio.svg)
 

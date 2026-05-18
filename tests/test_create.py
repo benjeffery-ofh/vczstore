@@ -62,7 +62,7 @@ def test_create__single():
     assert root["variant_allele"][0, 1] == "T"
 
 
-def test_create__single_has_zero_samples():
+def test_create__single_preserves_samples():
     vcz1 = make_vcz(
         [0],
         [100],
@@ -72,23 +72,6 @@ def test_create__single_has_zero_samples():
     )
     vcz_out = zarr.storage.MemoryStore()
     create(vcz_out, vcz1)
-    root = zarr.open(vcz_out)
-
-    assert root["sample_id"].shape == (0,)
-    assert root["call_genotype"].shape == (1, 0, 2)
-
-
-def test_create_then_append_has_no_empty_sample_gap():
-    vcz1 = make_vcz(
-        [0],
-        [100],
-        [["A", "T"]],
-        sample_id=["S1", "S2"],
-        call_genotype=[[[0, 0], [1, 1]]],
-    )
-    vcz_out = zarr.storage.MemoryStore()
-    create(vcz_out, vcz1)
-    append(vcz_out, vcz1)
     root = zarr.open(vcz_out)
 
     assert_array_equal(root["sample_id"][:], ["S1", "S2"])
@@ -96,7 +79,26 @@ def test_create_then_append_has_no_empty_sample_gap():
     assert_array_equal(root["call_genotype"][:], [[[0, 0], [1, 1]]])
 
 
-def test_create__override_samples_chunk_size():
+def test_create_then_append_fails_on_duplicate_samples():
+    vcz1 = make_vcz(
+        [0],
+        [100],
+        [["A", "T"]],
+        sample_id=["S1", "S2"],
+        call_genotype=[[[0, 0], [1, 1]]],
+    )
+    vcz_out = zarr.storage.MemoryStore()
+    create(vcz_out, vcz1)
+    with pytest.raises(ValueError, match="Duplicate samples"):
+        append(vcz_out, vcz1)
+    root = zarr.open(vcz_out)
+
+    assert_array_equal(root["sample_id"][:], ["S1", "S2"])
+    assert root["call_genotype"].shape == (1, 2, 2)
+    assert_array_equal(root["call_genotype"][:], [[[0, 0], [1, 1]]])
+
+
+def test_create__single_preserves_samples_chunk_size():
     vcz1 = make_vcz(
         [0],
         [100],
@@ -108,7 +110,7 @@ def test_create__override_samples_chunk_size():
     vcz_out = zarr.storage.MemoryStore()
     create(vcz_out, vcz1, samples_chunk_size=2)
     root = zarr.open(vcz_out)
-    assert root["call_genotype"].chunks[1] == 2
+    assert root["call_genotype"].chunks[1] == 1
 
 
 def test_create__no_match():
